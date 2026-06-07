@@ -1,0 +1,12 @@
+log {
+	{$CADDY_SERVER_LOG_OPTIONS}
+	# Redact the authorization query parameter that can be set by Mercure
+	format filter {
+		request>uri query {
+			replace authorization REDACTED
+		}
+	}
+}
+
+# Disable Topics tracking if not enabled explicitly: https://github.com/jkarlin/topics
+header ?Permissions-Policy "browsing-topics=()"

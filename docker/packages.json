@@ -1,0 +1,62 @@
+[
+  {
+    "name": "Brotli",
+    "url": "https://github.com/google/brotli",
+    "why": "Used for Symfony AssetMapper asset pre-compression",
+    "env": "all",
+    "packages": {
+      "alpine": "brotli",
+      "trixie": "brotli"
+    }
+  },
+  {
+    "name": "Supervisor",
+    "url": "https://supervisord.org",
+    "why": "Manages Symfony Messenger worker processes",
+    "env": "all",
+    "packages": {
+      "alpine": "supervisor",
+      "trixie": "supervisor"
+    }
+  },
+  {
+    "name": "Zstandard",
+    "url": "https://facebook.github.io/zstd",
+    "why": "Used for asset pre-compression in Symfony AssetMapper",
+    "env": "all",
+    "packages": {
+      "alpine": "zstd",
+      "trixie": "zstd"
+    }
+  },
+  {
+    "name": "Git",
+    "url": "https://git-scm.com",
+    "why": "Enables Git access with local credentials in Dev Containers",
+    "env": "dev",
+    "packages": {
+      "alpine": "git",
+      "trixie": "git"
+    }
+  },
+  {
+    "name": "GnuPG",
+    "url": "https://www.gnupg.org",
+    "why": "Enables GPG commit signing in Dev Containers",
+    "env": "dev",
+    "packages": {
+      "alpine": "gnupg",
+      "trixie": "gnupg2"
+    }
+  },
+  {
+    "name": "OpenSSH",
+    "url": "https://www.openssh.org",
+    "why": "Enables SSH Git access and deployments from Dev Containers",
+    "env": "dev",
+    "packages": {
+      "alpine": "openssh-client",
+      "trixie": "openssh-client"
+    }
+  }
+]

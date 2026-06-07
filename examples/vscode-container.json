@@ -1,0 +1,12 @@
+{
+  "name": "${localWorkspaceFolderBasename}",
+  "image": "gremo/frankenphp-symfony:8.5-alpine-dev",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/app,type=bind",
+  "workspaceFolder": "/app",
+  "mounts": [
+    "source=var,target=${containerWorkspaceFolder}/var,type=volume",
+    "source=vendor,target=${containerWorkspaceFolder}/vendor,type=volume"
+  ],
+  "overrideCommand": false,
+  "forwardPorts": [80, 443]
+}

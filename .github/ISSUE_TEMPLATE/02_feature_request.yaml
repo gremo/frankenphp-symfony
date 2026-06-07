@@ -1,0 +1,34 @@
+name: 🚀 Feature request
+description: If you have a feature request 💡
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you! ❤️ Please check if this issue already exists before submitting.
+
+  - type: dropdown
+    attributes:
+      label: To which environment is the feature request applicable?
+      description: Does this feature target development (e.g., VS Code), production, or both?
+      options:
+        - Both
+        - Development
+        - Production
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Description
+      description: |
+        A clear and concise description of the feature you're interested in.
+    validations:
+      required: true
+
+  - type: checkboxes
+    attributes:
+      label: Are you willing to contribute it?
+      options:
+        - label: I can work on a pull request to implement this feature

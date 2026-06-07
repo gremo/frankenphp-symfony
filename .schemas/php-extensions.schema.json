@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "PHP extensions metadata",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["name", "env", "package"],
+    "additionalProperties": false,
+    "properties": {
+      "name": {
+        "type": "string",
+        "description": "The friendly/display name."
+      },
+      "why": {
+        "type": "string",
+        "description": "The reason or use of this extension."
+      },
+      "url": {
+        "type": "string",
+        "format": "uri",
+        "description": "The URL of the official website, repository, or documentation page."
+      },
+      "env": {
+        "type": "string",
+        "enum": ["all", "dev", "prod"],
+        "description": "The environment in which the item should be installed."
+      },
+      "package": {
+        "type": "string",
+        "description": "The extension name as accepted by the install-php-extensions tool.",
+        "pattern": "^@?[a-z0-9][a-z0-9_-]*$"
+      }
+    }
+  }
+}

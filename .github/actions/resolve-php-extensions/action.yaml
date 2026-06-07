@@ -1,0 +1,55 @@
+name: Resolve PHP Extensions
+description: Resolves base and environment-specific PHP extensions
+
+inputs:
+  env:
+    description: Environment (e.g. dev, prod)
+    required: true
+  extensions_file:
+    description: Path to the metadata file
+    required: false
+    default: docker/php-extensions.json
+
+outputs:
+  base:
+    description: Base PHP extensions
+    value: ${{ steps.resolve.outputs.extensions_base }}
+  env:
+    description: Environment specific PHP extensions
+    value: ${{ steps.resolve.outputs.extensions_env }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve PHP Extensions
+      id: resolve
+      shell: bash
+      run: |
+        EXTENSIONS_FILE="${{ inputs.extensions_file }}"
+
+        EXTENSIONS_BASE=$(jq -r '
+          [.[] | select(.env == "all") | .package]
+          | map(select(. != null))
+          | join(" ")
+        ' "$EXTENSIONS_FILE")
+
+        EXTENSIONS_ENV=$(jq -r --arg env "${{ inputs.env }}" '
+          [.[] | select(.env == $env) | .package]
+          | map(select(. != null))
+          | join(" ")
+        ' "$EXTENSIONS_FILE")
+
+        echo "::group::PHP Extensions"
+        echo "base=$EXTENSIONS_BASE"
+        echo "env=$EXTENSIONS_ENV"
+        echo "::endgroup::"
+
+        {
+          echo "extensions_base<<EOF"
+          echo "$EXTENSIONS_BASE"
+          echo "EOF"
+
+          echo "extensions_env<<EOF"
+          echo "$EXTENSIONS_ENV"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"

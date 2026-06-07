@@ -1,0 +1,72 @@
+name: Update README
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/update-readme.yaml
+      - docker/packages.json
+      - docker/php-extensions.json
+      - docker/php/*.ini
+      - examples/*
+      - README.md
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Generate Documentation JSONs
+        env:
+          OUTPUT_DIR: "docs"
+          PACKAGES_FILE: "docker/packages.json"
+          EXTENSIONS_FILE: "docker/php-extensions.json"
+          INI_FILES: "docker/php/php.ini docker/php/php-dev.ini docker/php/php-prod.ini"
+        run: |
+          mkdir -p "$OUTPUT_DIR"
+
+          jq '[.[] | {
+            Package: (if .url then "<a href=\"" + .url + "\">" + .name + "</a>" else .name end),
+            Environment: ("<code>" + .env + "</code>"),
+            Description: .why
+          }]' "$PACKAGES_FILE" > "$OUTPUT_DIR/packages.json"
+
+          jq '[.[] | {
+            Extension: (if .url then "<a href=\"" + .url + "\">" + .name + "</a>" else .name end),
+            Name: ("<code>" + .package + "</code>"),
+            Environment: ("<code>" + .env + "</code>"),
+            Description: .why
+          }]' "$EXTENSIONS_FILE" > "$OUTPUT_DIR/php-extensions.json"
+
+          for file in $INI_FILES; do
+            filename=$(basename "$file")
+            output_name="${filename%.ini}.json"
+
+            jq -Rsn '[
+                inputs
+                | split("\n")[]
+                | select(test("^[^;]+="))
+                | capture("^\\s*(?<Setting>[^=\\s]+)\\s*=\\s*(?<Value>.*?)\\s*$")
+              ] | [
+                .[] | {
+                  Setting: ("<code>" + .Setting + "</code>"),
+                  Value: ("<code>" + .Value + "</code>")
+                }
+              ]' "$file" > "$OUTPUT_DIR/$output_name"
+          done
+
+      - name: Markdown autodocs
+        uses: dineshsonachalam/markdown-autodocs@v1.0.7
+        with:
+          commit_message: Update README
+
+      - name: Docker Hub Description
+        uses: peter-evans/dockerhub-description@v5
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          short-description: ${{ github.event.repository.description }}
+          enable-url-completion: true

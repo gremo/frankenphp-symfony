@@ -1,0 +1,151 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/release.yaml
+      - docker/**
+      - Dockerfile.*
+
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/release.yaml
+      - docker/**
+      - Dockerfile.*
+
+  schedule:
+    - cron: "0 6 * * *"
+
+env:
+  FRANKENPHP_VERSION: "1.12"
+  DOCKER_METADATA_PR_HEAD_SHA: "true"
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  release:
+    name: Release (${{ matrix.php }}-${{ matrix.os }}-${{ matrix.target }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.5", "8.4", "8.3", "8.2"]
+        os: [alpine, trixie]
+        target: [dev, prod]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+        with:
+          driver: docker-container
+
+      - name: Resolve OS packages
+        id: pkgs
+        uses: ./.github/actions/resolve-packages
+        with:
+          os: ${{ matrix.os }}
+          env: ${{ matrix.target }}
+
+      - name: Resolve PHP Extensions
+        id: php_ext
+        uses: ./.github/actions/resolve-php-extensions
+        with:
+          env: ${{ matrix.target }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ github.repository }}
+          tags: |
+            type=raw,value=${{ matrix.php }}-${{ matrix.os }}-${{ matrix.target }}
+            type=raw,value=${{ matrix.php }}-${{ matrix.os }},enable=${{ matrix.target == 'prod' }}
+            type=raw,value=${{ matrix.php }},enable=${{ matrix.target == 'prod' && matrix.os == 'trixie' }}
+            type=sha,prefix=sha-
+          labels: |
+            org.opencontainers.image.title=FrankenPHP Symfony
+            org.opencontainers.image.description=FrankenPHP docker image optimized for Symfony
+            org.opencontainers.image.licenses=ISC
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}
+            org.opencontainers.image.vendor=${{ github.repository_owner }}
+
+      - name: Build for testing
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.${{ matrix.os }}
+          target: ${{ matrix.target }}
+          load: true
+          platforms: linux/amd64
+          build-args: &build-args |
+            FRANKENPHP_VERSION=${{ env.FRANKENPHP_VERSION }}
+            PHP_VERSION=${{ matrix.php }}
+            PACKAGES_BASE=${{ steps.pkgs.outputs.base }}
+            PACKAGES_ENV=${{ steps.pkgs.outputs.env }}
+            EXTENSIONS_BASE=${{ steps.php_ext.outputs.base }}
+            EXTENSIONS_ENV=${{ steps.php_ext.outputs.env }}
+          tags: ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          cache-from: type=gha,scope=build-${{ matrix.os }}-${{ matrix.php }}-${{ matrix.target }}
+          cache-to: type=gha,mode=max,scope=build-${{ matrix.os }}-${{ matrix.php }}-${{ matrix.target }}
+
+      - name: Run container
+        run: |
+          docker run -d \
+            --name smoke-test \
+            -v "$GITHUB_WORKSPACE/tests/fixtures/app-${{ matrix.target }}:/app" \
+            -p 80:80 -p 443:443 -p 443:443/udp \
+            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+
+      - name: Structure test container
+        uses: plexsystems/container-structure-test-action@v0.3.0
+        with:
+          image: ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          config: tests/structure-${{ matrix.target }}.yaml
+
+      - name: Smoke test container
+        env:
+          TIMEOUT: 60
+        run: |
+          echo "Waiting for HTTP endpoint..."
+          timeout ${TIMEOUT}s bash -c '
+            until [ "$(curl -skL -o /dev/null -w "%{http_code}" http://localhost:80)" = "200" ]; do
+              sleep 1
+            done
+          ' || {
+            echo "::group::Container log"
+            docker logs smoke-test
+            echo "::endgroup::"
+            exit 1
+          }
+
+      - name: Cleanup test container
+        if: always()
+        run: docker rm -f smoke-test || true
+
+      - name: Login to Docker Hub
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build for push
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.${{ matrix.os }}
+          target: ${{ matrix.target }}
+          push: true
+          platforms: linux/amd64,linux/arm64
+          build-args: *build-args
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=build-${{ matrix.os }}-${{ matrix.php }}-${{ matrix.target }}
+          cache-to: type=gha,mode=max,scope=build-${{ matrix.os }}-${{ matrix.php }}-${{ matrix.target }}

@@ -1,0 +1,62 @@
+name: Resolve OS packages
+description: Resolves base and environment-specific OS packages
+
+inputs:
+  os:
+    description: Linux distribution
+    type: choice
+    required: true
+    options:
+      - alpine
+      - trixie
+  env:
+    description: Environment (e.g. dev, prod)
+    required: true
+  packages_file:
+    description: Path to the metadata file
+    required: false
+    default: "docker/packages.json"
+
+outputs:
+  base:
+    description: Base OS packages
+    value: ${{ steps.resolve.outputs.packages_base }}
+  env:
+    description: Environment specific OS packages
+    value: ${{ steps.resolve.outputs.packages_env }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve OS Packages
+      id: resolve
+      shell: bash
+      run: |
+        PACKAGES_FILE="${{ inputs.packages_file }}"
+
+        PACKAGES_BASE=$(jq -r --arg os "${{ inputs.os }}" '
+          [.[] | select(.env == "all") | .packages[$os]]
+          | map(select(. != null))
+          | join(" ")
+        ' "$PACKAGES_FILE")
+
+        PACKAGES_ENV=$(jq -r --arg os "${{ inputs.os }}" --arg env "${{ inputs.env }}" '
+          [.[] | select(.env == $env) | .packages[$os]]
+          | map(select(. != null))
+          | join(" ")
+        ' "$PACKAGES_FILE")
+
+        echo "::group::OS Packages"
+        echo "base=$PACKAGES_BASE"
+        echo "env=$PACKAGES_ENV"
+        echo "::endgroup::"
+
+        {
+          echo "packages_base<<EOF"
+          echo "$PACKAGES_BASE"
+          echo "EOF"
+
+          echo "packages_env<<EOF"
+          echo "$PACKAGES_ENV"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"

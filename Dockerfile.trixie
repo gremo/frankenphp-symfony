@@ -1,0 +1,77 @@
+# syntax=docker/dockerfile:1
+ARG FRANKENPHP_VERSION
+ARG PHP_VERSION
+
+FROM dunglas/frankenphp:${FRANKENPHP_VERSION}-php${PHP_VERSION}-trixie AS base
+SHELL ["/bin/bash", "-euxo", "pipefail", "-c"]
+
+ARG TARGETARCH
+ARG PACKAGES_BASE
+ARG EXTENSIONS_BASE
+
+COPY docker/frankenphp/site.caddyfile /etc/frankenphp/site.caddyfile
+COPY docker/php/php.ini $PHP_INI_DIR/conf.d/10-php.ini
+COPY docker/ssh/config /etc/ssh/ssh_config.d/10-strict-hostkeys.conf
+COPY docker/supervisor/docker.conf /etc/supervisor/conf.d/00-app.conf
+
+RUN \
+    --mount=type=cache,target=/var/cache/apt,id=apt-${TARGETARCH} \
+    --mount=type=cache,target=/var/lib/apt/lists,id=apt-lists-${TARGETARCH} \
+    # Install OS packages
+    apt-get update && \
+    echo "$PACKAGES_BASE" | xargs -r apt-get install -y --no-install-recommends && \
+    # Configure FrankenPHP
+    sed -i '/{\$CADDY_SERVER_EXTRA_DIRECTIVES}/i\\timport site.caddyfile\n' /etc/frankenphp/Caddyfile && \
+    sed -i '/{\$CADDY_SERVER_EXTRA_DIRECTIVES}/i\\timport site.d/*.caddyfile\n' /etc/frankenphp/Caddyfile && \
+    # Install PHP additional extensions
+    echo "$EXTENSIONS_BASE" | xargs -r install-php-extensions
+
+FROM base AS dev
+
+ARG TARGETARCH
+ARG PACKAGES_ENV
+ARG EXTENSIONS_ENV
+
+COPY docker/php/php-dev.ini $PHP_INI_DIR/conf.d/20-php-dev.ini
+
+RUN \
+    --mount=type=cache,target=/var/cache/apt,id=apt-${TARGETARCH} \
+    --mount=type=cache,target=/var/lib/apt/lists,id=apt-lists-${TARGETARCH} \
+    --mount=type=bind,source=docker/frankenphp,target=/mnt/frankenphp \
+    # Install OS packages
+    apt-get update && \
+    echo "$PACKAGES_ENV" | xargs -r apt-get install -y --no-install-recommends && \
+    # Configure FrankenPHP
+    sed -i '/{\$CADDY_GLOBAL_OPTIONS}/i\\tdebug\n' /etc/frankenphp/Caddyfile && \
+    cat /mnt/frankenphp/site-dev.caddyfile >> /etc/frankenphp/site.caddyfile && \
+    # Install PHP additional extensions
+    echo "$EXTENSIONS_ENV" | xargs -r install-php-extensions && \
+    # Configure PHP
+    cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
+
+FROM base AS prod
+
+ARG TARGETARCH
+ARG PACKAGES_ENV
+ARG EXTENSIONS_ENV
+
+ENV APP_ENV=prod
+ENV FRANKENPHP_CONFIG="worker ./public/index.php"
+
+COPY docker/frankenphp/docker-entrypoint-prod /usr/local/bin/docker-php-entrypoint
+COPY docker/php/php-prod.ini $PHP_INI_DIR/conf.d/20-php-prod.ini
+
+RUN \
+    --mount=type=cache,target=/var/cache/apt,id=apt-${TARGETARCH} \
+    --mount=type=cache,target=/var/lib/apt/lists,id=apt-lists-${TARGETARCH} \
+    --mount=type=bind,source=docker/frankenphp,target=/mnt/frankenphp \
+    # Install OS packages
+    apt-get update && \
+    echo "$PACKAGES_ENV" | xargs -r apt-get install -y --no-install-recommends && \
+    # Configure FrankenPHP
+    cat /mnt/frankenphp/site-prod.caddyfile >> /etc/frankenphp/site.caddyfile && \
+    chmod +x /usr/local/bin/docker-php-entrypoint && \
+    # Install PHP additional extensions
+    echo "$EXTENSIONS_ENV" | xargs -r install-php-extensions && \
+    # Configure PHP
+    cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"

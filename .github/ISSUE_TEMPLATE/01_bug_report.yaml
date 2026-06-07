@@ -1,0 +1,50 @@
+name: 🐞 Bug report
+description: If something isn't working 🔧
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you! ❤️ Please check if this issue already exists before submitting.
+
+  - type: dropdown
+    attributes:
+      label: Which configuration is causing the bug?
+      description: Does the error occur in development (e.g., VS Code), production, or both?
+      options:
+        - Both
+        - Development
+        - Production
+    validations:
+      required: true
+
+  - type: dropdown
+    attributes:
+      label: OS you are running?
+      options:
+        - Windows
+        - Linux
+        - macOS
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: Docker Desktop version?
+      description: Run the command `docker version --format '{{.Server.Version}}'` and paste the output.
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: VS Code version?
+      description: Please run the command `code --version` and paste the output.
+
+  - type: textarea
+    attributes:
+      label: Bug description
+      description: A clear and concise description of the issue you're experiencing and the steps to reproduce.
+    validations:
+      required: true

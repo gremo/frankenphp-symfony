@@ -1,0 +1,65 @@
+[
+  {
+    "name": "Composer",
+    "why": "Manages all Symfony dependencies and package installations",
+    "env": "all",
+    "package": "@composer",
+    "url": "https://getcomposer.org"
+  },
+  {
+    "name": "APCu",
+    "why": "Provides a shared RAM cache for application data, configuration settings, and metadata",
+    "env": "all",
+    "package": "apcu",
+    "url": "https://www.php.net/manual/en/book.apcu.php"
+  },
+  {
+    "name": "BCMath",
+    "why": "Handles high-precision mathematics for financial calculations and prices",
+    "env": "all",
+    "package": "bcmath",
+    "url": "https://www.php.net/manual/en/book.bc.php"
+  },
+  {
+    "name": "GD",
+    "why": "Resizes, crops, and optimizes user-uploaded images through media bundles",
+    "env": "all",
+    "package": "gd",
+    "url": "https://www.php.net/manual/en/book.image.php"
+  },
+  {
+    "name": "Intl",
+    "why": "Handles international text transliteration, forms localization, and Twig translation formatting",
+    "env": "all",
+    "package": "intl",
+    "url": "https://www.php.net/manual/en/book.intl.php"
+  },
+  {
+    "name": "PDO MySQL",
+    "why": "Connects Doctrine ORM to MySQL databases",
+    "env": "all",
+    "package": "pdo_mysql",
+    "url": "https://www.php.net/manual/en/ref.pdo-mysql.php"
+  },
+  {
+    "name": "PDO PostgreSQL",
+    "why": "Connects Doctrine ORM to PostgreSQL databases",
+    "env": "all",
+    "package": "pdo_pgsql",
+    "url": "https://www.php.net/manual/en/ref.pdo-pgsql.php"
+  },
+  {
+    "name": "XSL",
+    "why": "Required by twig/inky-extra to generate responsive HTML email layouts",
+    "env": "all",
+    "package": "xsl",
+    "url": "https://www.php.net/manual/en/book.xsl.php"
+  },
+  {
+    "name": "Zip",
+    "why": "Speeds up Composer downloads and manages zip archives within the application",
+    "env": "all",
+    "package": "zip",
+    "url": "https://www.php.net/manual/en/book.zip.php"
+  }
+]
