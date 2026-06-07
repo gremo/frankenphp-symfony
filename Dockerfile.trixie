@@ -1,0 +1,32 @@
+# syntax=docker/dockerfile:1.7
+
+ARG PHP_VERSION=
+
+FROM dunglas/frankenphp:${PHP_VERSION}-trixie as base
+SHELL ["/bin/bash", "-euxo", "pipefail", "-c"]
+
+RUN \
+    --mount=type=cache,target=/var/cache/apt/archives \
+    --mount=type=cache,target=/var/lib/apt/lists \
+    # Install OS base packages
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        brotli \
+        supervisor \
+        zstd
+
+FROM base AS dev
+SHELL ["/bin/bash", "-euxo", "pipefail", "-c"]
+
+RUN \
+    --mount=type=cache,target=/var/cache/apt/archives \
+    --mount=type=cache,target=/var/lib/apt/lists \
+    # Install OS dev-only packages
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        git \
+        gnupg2 \
+        openssh-client
+
+FROM base AS prod
+SHELL ["/bin/bash", "-euxo", "pipefail", "-c"]

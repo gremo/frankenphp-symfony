@@ -1,0 +1,27 @@
+# syntax=docker/dockerfile:1.7
+
+ARG PHP_VERSION=
+
+FROM dunglas/frankenphp:${PHP_VERSION}-alpine as base
+SHELL ["/bin/sh", "-eux", "-c"]
+
+RUN \
+    --mount=type=cache,target=/var/cache/apk \
+    # Install OS base packages
+    apk add \
+        brotli \
+        supervisor \
+        zstd
+
+FROM base AS dev
+SHELL ["/bin/sh", "-eux", "-c"]
+
+RUN \
+    --mount=type=cache,target=/var/cache/apk \
+    # Install OS dev-only packages
+    apk add \
+        git \
+        gnupg
+
+FROM base AS prod
+SHELL ["/bin/sh", "-eux", "-c"]
