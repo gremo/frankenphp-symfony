@@ -1,0 +1,104 @@
+name: Update README
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/update-readme.yaml
+      - docker/php/*.ini
+      - docker-bake.hcl
+      - README.md
+
+  workflow_dispatch:
+
+env:
+  BAKE_FILE: docker-bake.hcl
+  METADATA_DIR: docs
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v6
+
+      - name: 🛠️ Prepare
+        run: mkdir -p "$METADATA_DIR"
+
+      - name: 📋 Build PHP ini metadata
+        env:
+          INI_FILES: "docker/php/php.ini docker/php/php-dev.ini docker/php/php-prod.ini"
+        run: |
+          for file in $INI_FILES; do
+            filename=$(basename "$file")
+            output_name="${filename%.ini}.json"
+
+            jq -Rsn '[
+                inputs
+                | split("\n")[]
+                | select(test("^[^;]+="))
+                | capture("^\\s*(?<Setting>[^=\\s]+)\\s*=\\s*(?<Value>.*?)\\s*$")
+              ] | [
+                .[] | {
+                  Setting: ("<code>" + .Setting + "</code>"),
+                  Value: ("<code>" + .Value + "</code>")
+                }
+              ]' "$file" > "$METADATA_DIR/$output_name"
+          done
+
+      - name: 🔄 Convert HCL to JSON
+        id: hcl
+        uses: ./.github/actions/hcl-to-json
+        with:
+          file: ${{ env.BAKE_FILE }}
+
+      - name: 📋 Build PHP extensions metadata
+        env:
+          HCL_JSON: ${{ steps.hcl.outputs.json }}
+        run: |
+          OUTPUT_FILE="$METADATA_DIR/php-extensions.json"
+
+          printf '%s' "$HCL_JSON" \
+            | jq '[.PHP_EXTENSIONS[] | {
+                Extension: (if .url then "<a href=\"" + .url + "\">" + .name + "</a>" else .name end),
+                Name: ("<code>" + .package + "</code>"),
+                Environment: ("<code>" + .env + "</code>"),
+                Description: .why
+              } ]' \
+            > "$OUTPUT_FILE"
+
+          echo "::group::PHP extensions"
+          cat "$OUTPUT_FILE"
+          echo "::endgroup::"
+
+      - name: 📋 Build OS packages metadata
+        env:
+          HCL_JSON: ${{ steps.hcl.outputs.json }}
+        run: |
+          OUTPUT_FILE="$METADATA_DIR/packages.json"
+
+          printf '%s' "$HCL_JSON" \
+            | jq '[.OS_PACKAGES[] | {
+                Package: (if .url then "<a href=\"" + .url + "\">" + .name + "</a>" else .name end),
+                Environment: ("<code>" + .env + "</code>"),
+                Description: .why
+              }]' \
+            > "$OUTPUT_FILE"
+
+          echo "::group::OS Packages"
+          cat "$OUTPUT_FILE"
+          echo "::endgroup::"
+
+      - name: 📖 Markdown autodocs
+        uses: dineshsonachalam/markdown-autodocs@v1.0.7
+        with:
+          commit_message: Update README
+
+      - name: 🌐 Docker Hub Description
+        uses: peter-evans/dockerhub-description@v5
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          short-description: ${{ github.event.repository.description }}
+          enable-url-completion: true

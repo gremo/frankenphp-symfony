@@ -1,0 +1,20 @@
+services:
+    php:
+        container_name: '${COMPOSE_PROJECT_NAME}-php'
+        build:
+            target: prod
+            args:
+                PHP_VERSION: __PHP_VERSION__
+        volumes:
+            - php-data:/data
+            - php-config:/config
+        ports:
+            - 80:80
+            - 443:443
+            - 443:443/udp
+        restart: unless-stopped
+
+volumes:
+    db-data:
+    php-config:
+    php-data:

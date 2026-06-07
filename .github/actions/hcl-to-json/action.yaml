@@ -1,0 +1,84 @@
+name: HCL to JSON Converter
+description: Converts an HCL file into JSON format and returns the content
+
+inputs:
+  file:
+    description: Path to the HCL file to convert
+    required: true
+  hcl2json_version:
+    description: Version of hcl2json to use
+    required: false
+    default: "v0.6.9"
+
+outputs:
+  json:
+    description: The full content of the converted file in JSON format
+    value: ${{ steps.convert.outputs.json }}
+
+runs:
+  using: composite
+  steps:
+    - name: 🛠️ Setup hcl2json
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        ARCH="$(uname -m)"
+        OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+        case "$ARCH" in
+          x86_64|amd64) ARCH="amd64" ;;
+          aarch64|arm64) ARCH="arm64" ;;
+          *) echo "::error::Unsupported architecture: $ARCH." && exit 1 ;;
+        esac
+
+        VERSION="${{ inputs.hcl2json_version }}"
+        BIN_DIR="$RUNNER_TEMP/bin"
+        BIN_PATH="$BIN_DIR/hcl2json"
+        VERSIONED_BIN="$BIN_DIR/hcl2json-${VERSION}"
+
+        mkdir -p "$BIN_DIR"
+
+        # Download versioned binary if missing
+        if [ ! -f "$VERSIONED_BIN" ]; then
+          BIN_URL="https://github.com/tmccombs/hcl2json/releases/download/${VERSION}/hcl2json_${OS}_${ARCH}"
+          curl -fsSL --retry 3 --retry-delay 2 "$BIN_URL" -o "$VERSIONED_BIN"
+          chmod +x "$VERSIONED_BIN"
+        fi
+
+        # Ensure stable CLI entry point
+        ln -snf "$VERSIONED_BIN" "$BIN_PATH"
+
+        echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+    - name: 🔄 Convert HCL to JSON
+      id: convert
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        FILE="${{ inputs.file }}"
+        if [[ ! -f "$FILE" ]]; then
+          echo "::error::HCL file not found: $FILE"
+          exit 1
+        fi
+
+        jq --version >/dev/null 2>&1 || {
+          echo "::error::jq is required but not installed."
+          exit 1
+        }
+
+        JSON="$(hcl2json "$FILE")"
+        if ! printf '%s' "$JSON" | jq empty >/dev/null 2>&1; then
+          echo "::error::Invalid JSON produced by hcl2json."
+          exit 1
+        fi
+
+        {
+          echo "json<<JSON"
+          printf '%s\n' "$JSON"
+          echo "JSON"
+        } >> "$GITHUB_OUTPUT"
+
+        echo "::group::JSON"
+        echo "$JSON"
+        echo "::endgroup::"

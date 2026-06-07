@@ -1,0 +1,96 @@
+schemaVersion: 2.0.0
+
+metadataTest:
+  envVars:
+    - key: APP_ENV
+      value: prod
+    - key: FRANKENPHP_CONFIG
+      value: 'worker ./public/index.php'
+
+commandTests:
+  - name: Brotli
+    command: brotli
+    args: ['-V']
+
+  - name: Supervisor
+    command: supervisord
+    args: ['-v']
+
+  - name: Zstandard
+    command: zstd
+    args: ['-V']
+
+  - name: Git
+    command: which
+    args: ['git']
+    exitCode: 1
+
+  - name: GnuPG
+    command: which
+    args: ['gpg']
+    exitCode: 1
+
+  - name: OpenSSH
+    command: which
+    args: ['ssh']
+    exitCode: 1
+
+  - name: Composer
+    command: composer
+    args: ['-V', '2> /dev/null']
+
+  - name: PHP Extensions
+    command: php
+    args: ['-m']
+    exitCode: 0
+    expectedOutput:
+      - '(?i)apcu'
+      - '(?i)bcmath'
+      - '(?i)gd'
+      - '(?i)int'
+      - '(?i)pdo_mysql'
+      - '(?i)pdo_pgsql'
+      - '(?i)xsl'
+      - '(?i)zip'
+
+fileExistenceTests:
+  - name: SSH configuration
+    path: /etc/ssh/ssh_config.d/10-strict-hostkeys.conf
+    shouldExist: true
+
+  - name: FrankenPHP configuration
+    path: /etc/frankenphp/site.caddyfile
+    shouldExist: true
+
+  - name: PHP system configuration
+    path: /usr/local/etc/php/php.ini
+    shouldExist: true
+
+  - name: PHP common configuration
+    path: /usr/local/etc/php/conf.d/10-php.ini
+    shouldExist: true
+
+  - name: PHP dev configuration
+    path: /usr/local/etc/php/conf.d/20-php-dev.ini
+    shouldExist: false
+
+  - name: PHP prod configuration
+    path: /usr/local/etc/php/conf.d/20-php-prod.ini
+    shouldExist: true
+
+fileContentTests:
+  - name: Caddy configuration
+    path: /etc/frankenphp/Caddyfile
+    expectedContents:
+      - '(?m)^\s*import\s+site\.caddyfile.*$'
+      - '(?m)^\s*import\s+site\.d/\*\.caddyfile.*$'
+    excludedContents:
+      - '(?m)^\s*debug\s*$'
+
+  - name: PHP common configuration
+    path: /usr/local/etc/php/conf.d/10-php.ini
+    expectedContents: ['.*Core PHP configuration.*']
+
+  - name: 'PHP prod configuration'
+    path: /usr/local/etc/php/conf.d/20-php-prod.ini
+    expectedContents: ['.*Production-specific PHP configuration.*']

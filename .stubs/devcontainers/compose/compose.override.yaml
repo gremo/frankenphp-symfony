@@ -1,0 +1,10 @@
+services:
+    php:
+        env_file:
+            - path: .env.prod.local
+              required: false
+        healthcheck:
+            start_period: 10s
+            interval: 10s
+            retries: 3
+            timeout: 5s

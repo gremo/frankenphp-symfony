@@ -1,0 +1,16 @@
+name: ❓Question and help
+description: If you have any question or need help 🛟
+title: "[Question]: "
+labels: ["documentation", "question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you! ❤️ Please check if this issue already exists before submitting.
+
+  - type: textarea
+    attributes:
+      label: Description
+      description: A clear and concise summary of your question.
+    validations:
+      required: true

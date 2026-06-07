@@ -1,0 +1,101 @@
+name: Release Dev Containers
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/release-devcontainers.yaml
+      - .stubs/**
+      - docker-bake.hcl
+
+  workflow_dispatch:
+
+env:
+  BAKE_FILE: docker-bake.hcl
+  STUBS_DIR: .stubs
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v6
+
+      - name: 🔄 Convert HCL to JSON
+        id: hcl
+        uses: ./.github/actions/hcl-to-json
+        with:
+          file: ${{ env.BAKE_FILE }}
+
+      - name: 📋 Extract latest PHP version
+        id: meta
+        env:
+          HCL_JSON: ${{ steps.hcl.outputs.json }}
+        run: |
+          PHP_VERSIONS=$(jq -r '.PHP_VERSIONS[]? // empty' <<< "$HCL_JSON")
+
+          echo "::group::PHP versions"
+          echo "$PHP_VERSIONS"
+          echo "::endgroup::"
+
+          LATEST_PHP_VERSION=$(printf '%s\n' "$PHP_VERSIONS" | sort -V | tail -n1)
+
+          echo "::group::PHP latest"
+          echo "$LATEST_PHP_VERSION"
+          echo "::endgroup::"
+
+          echo "latest_php_version=$LATEST_PHP_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: 🧩 Render templates
+        run: |
+          PHP_VERSION="${{ steps.meta.outputs.latest_php_version }}"
+          REPO_NAME="${GITHUB_REPOSITORY##*/}"
+          REPO_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
+
+          # Replace placeholders in the stubs directory
+          find "$STUBS_DIR" -type f -exec \
+            sed -i \
+              -e "s|__PHP_VERSION__|${PHP_VERSION}|g" \
+              -e "s|__REPO_NAME__|${REPO_NAME}|g" \
+              -e "s|__REPO_URL__|${REPO_URL}|g" \
+              {} +
+
+      - name: 📦 Build devcontainer archives
+        id: build
+        run: |
+          declare -A PACKAGES=(
+            ["devcontainer-image"]="$STUBS_DIR/devcontainers/image"
+            ["devcontainer-compose"]="$STUBS_DIR/devcontainers/compose"
+          )
+
+          for NAME in "${!PACKAGES[@]}"; do
+            SRC="${PACKAGES[$NAME]}"
+            OUTPUT_DIR="build/$NAME"
+            ZIP_FILE="${NAME}.zip"
+
+            rm -rf "$OUTPUT_DIR"
+            mkdir -p "$OUTPUT_DIR"
+
+            cp -r "$SRC/." "$OUTPUT_DIR"
+
+            (
+              cd "$OUTPUT_DIR"
+              zip -r "../../$ZIP_FILE" .
+            )
+
+            ZIP_FILES+="$ZIP_FILE"$'\n'
+          done
+
+          {
+            echo "files<<EOF"
+            echo "$ZIP_FILES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: 🚀 Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: latest
+          name: devcontainer-packages
+          files: ${{ steps.build.outputs.files }}

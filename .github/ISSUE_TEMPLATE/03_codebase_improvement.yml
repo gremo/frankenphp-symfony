@@ -1,0 +1,23 @@
+name: 🤓 Codebase improvement
+description: If you want to improve codebase quality and maintainability 👨‍💻
+title: "[Codebase]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you! ❤️ Please check if this issue already exists before submitting.
+
+  - type: textarea
+    attributes:
+      label: Description
+      description: |
+        A clear and concise description of the improvement you suggest.
+    validations:
+      required: true
+
+  - type: checkboxes
+    attributes:
+      label: Are you willing to contribute it?
+      options:
+        - label: I can work on a pull request to implement this improvement

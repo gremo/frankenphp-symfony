@@ -1,0 +1,17 @@
+# Remove Server header to reduce fingerprinting surface
+header -Server
+
+@assets path /assets/*
+
+header @assets {
+	# Long-lived immutable caching for versioned static assets
+	Cache-Control "public, max-age=31536000, immutable"
+
+	# Prevent MIME type sniffing to mitigate content-type attacks
+	X-Content-Type-Options "nosniff"
+}
+
+file_server @assets {
+	# Prefer precompressed assets to reduce CPU usage and improve latency
+	precompressed zstd br gzip
+}
