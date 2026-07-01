@@ -137,6 +137,13 @@ PHP_EXTENSIONS = [
     "url": "https://www.php.net/manual/en/ref.pdo-pgsql.php"
   },
   {
+    "name": "Xdebug",
+    "why": "Provides step-by-step debugging and breakpoint support for PHP applications",
+    "env": "dev",
+    "package": "xdebug",
+    "url": "https://xdebug.org"
+  },
+  {
     "name": "XSL",
     "why": "Required by twig/inky-extra to generate responsive HTML email layouts",
     "env": "all",
