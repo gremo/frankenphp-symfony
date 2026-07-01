@@ -56,6 +56,7 @@ Your project is ready at [localhost](https://localhost) 💪
 <tr ><td class="extension-td td_text"><a href="https://www.php.net/manual/en/book.intl.php">Intl</a></td><td class="name-td td_text"><code>intl</code></td><td class="environment-td td_text"><code>all</code></td><td class="description-td td_text">Handles international text transliteration, forms localization, and Twig translation formatting</td></tr>
 <tr ><td class="extension-td td_text"><a href="https://www.php.net/manual/en/ref.pdo-mysql.php">PDO MySQL</a></td><td class="name-td td_text"><code>pdo_mysql</code></td><td class="environment-td td_text"><code>all</code></td><td class="description-td td_text">Connects Doctrine ORM to MySQL databases</td></tr>
 <tr ><td class="extension-td td_text"><a href="https://www.php.net/manual/en/ref.pdo-pgsql.php">PDO PostgreSQL</a></td><td class="name-td td_text"><code>pdo_pgsql</code></td><td class="environment-td td_text"><code>all</code></td><td class="description-td td_text">Connects Doctrine ORM to PostgreSQL databases</td></tr>
+<tr ><td class="extension-td td_text"><a href="https://xdebug.org">Xdebug</a></td><td class="name-td td_text"><code>xdebug</code></td><td class="environment-td td_text"><code>dev</code></td><td class="description-td td_text">Provides step-by-step debugging and breakpoint support for PHP applications</td></tr>
 <tr ><td class="extension-td td_text"><a href="https://www.php.net/manual/en/book.xsl.php">XSL</a></td><td class="name-td td_text"><code>xsl</code></td><td class="environment-td td_text"><code>all</code></td><td class="description-td td_text">Required by twig/inky-extra to generate responsive HTML email layouts</td></tr>
 <tr ><td class="extension-td td_text"><a href="https://www.php.net/manual/en/book.zip.php">Zip</a></td><td class="name-td td_text"><code>zip</code></td><td class="environment-td td_text"><code>all</code></td><td class="description-td td_text">Speeds up Composer downloads and manages zip archives within the application</td></tr></tbody></table>
 <!-- MARKDOWN-AUTO-DOCS:END -->
@@ -81,7 +82,10 @@ Your project is ready at [localhost](https://localhost) 💪
 <b>Development</b> environment:
 
 <!-- MARKDOWN-AUTO-DOCS:START (JSON_TO_HTML_TABLE:src=./docs/php-dev.json) -->
-<table class="JSON-TO-HTML-TABLE"><thead><tr><th class="setting-th">Setting</th><th class="value-th">Value</th></tr></thead><tbody ><tr ><td class="setting-td td_text"><code>xdebug.client_host</code></td><td class="value-td td_text"><code>host.docker.internal</code></td></tr></tbody></table>
+<table class="JSON-TO-HTML-TABLE"><thead><tr><th class="setting-th">Setting</th><th class="value-th">Value</th></tr></thead><tbody ><tr ><td class="setting-td td_text"><code>xdebug.client_host</code></td><td class="value-td td_text"><code>host.docker.internal</code></td></tr>
+<tr ><td class="setting-td td_text"><code>xdebug.log_level</code></td><td class="value-td td_text"><code>0</code></td></tr>
+<tr ><td class="setting-td td_text"><code>xdebug.mode</code></td><td class="value-td td_text"><code>off</code></td></tr>
+<tr ><td class="setting-td td_text"><code>xdebug.start_with_request</code></td><td class="value-td td_text"><code>trigger</code></td></tr></tbody></table>
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
 <b>Production</b> environment:
